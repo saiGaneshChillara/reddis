@@ -21,14 +21,15 @@ func handle(args []string) string {
 		if len(args) == 1 { return es("PONG") }
 		return eb(args[1], true)
 	case "ECHO":
-		// TODO: Return args[1] as a bulk string using eb()
-		if len(args) < 2 {
-			return es("")
-		} else {
-			return eb(args[1], true)
+		return eb(args[1], true)
+	case "COMMAND":
+		// TODO: If args[1] is "DOCS", return es("OK")
+		if args[1] == "DOCS" {
+			return es("OK")
 		}
 	}
-	return ee(fmt.Sprintf("ERR unknown command '%s'", args[0]))
+	// TODO: Return error for unknown command: -ERR unknown command '<original_cmd>'\r\n
+	return fmt.Sprintf("-ERR unknown command '%s'\r\n", args[0])
 }
 
 func parseArgs(line string) []string {
