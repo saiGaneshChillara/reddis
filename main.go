@@ -7,6 +7,21 @@ import (
 	"strings"
 )
 
+var ARITY = map[string]struct{ Min, Max int} {
+	"PING": {1, 2},
+	"ECHO": {2, 2},
+	"COMMAND": {1, 2},
+}
+
+func checkArity(cmd string, args []string) (bool, string) {
+	if arity, ok := ARITY[cmd]; ok {
+		if len(args) < arity.Min || len(args) > arity.Max {
+			return false, fmt.Sprintf("ERR wrong number of arguments for '%s' command", cmd)
+		}
+	}
+	return true, ""
+}
+
 func eb(s string, ok bool) string {
 	if !ok { return "$-1\r\n" }
 	return fmt.Sprintf("$%d\r\n%s\r\n", len(s), s)
@@ -18,18 +33,23 @@ func handle(args []string) string {
 	cmd := strings.ToUpper(args[0])
 	switch cmd {
 	case "PING":
+		// TODO: If len(args) > 2, return ee("ERR wrong number of arguments for 'PING' command")
+		if ok, err := checkArity(cmd, args); !ok {
+			return ee(err)
+		}
 		if len(args) == 1 { return es("PONG") }
 		return eb(args[1], true)
 	case "ECHO":
+		// TODO: If len(args) != 2, return ee("ERR wrong number of arguments for 'ECHO' command")
+		if ok, err := checkArity(cmd, args); !ok {
+			return ee(err)
+		}
 		return eb(args[1], true)
 	case "COMMAND":
-		// TODO: If args[1] is "DOCS", return es("OK")
-		if args[1] == "DOCS" {
-			return es("OK")
-		}
+		if len(args) > 1 && strings.ToUpper(args[1]) == "DOCS" { return es("OK") }
+		return es("OK")
 	}
-	// TODO: Return error for unknown command: -ERR unknown command '<original_cmd>'\r\n
-	return fmt.Sprintf("-ERR unknown command '%s'\r\n", args[0])
+	return ee(fmt.Sprintf("ERR unknown command '%s'", args[0]))
 }
 
 func parseArgs(line string) []string {
